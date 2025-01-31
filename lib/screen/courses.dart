@@ -1,7 +1,7 @@
 // course_page.dart
 import 'package:flutter/material.dart';
 
-import 'featuredcoursescarausel.dart';
+import '../components/featuredcoursescarausel.dart';
 
 class CoursePage extends StatefulWidget {
   @override

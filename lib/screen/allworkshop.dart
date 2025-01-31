@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:prideconnect/components/logoanimaionwidget.dart';
 import '../utils/contstants.dart';
 
 class AllWorkshopPage extends StatefulWidget {
@@ -12,32 +13,42 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
   String selectedCategory = "All";
   String searchQuery = "";
 
-  final List<Map<String, dynamic>> workshops = [
-    {
-      "title": "Advanced UI/UX Workshop",
-      "date": "March 15, 2024",
-      "time": "2:00 PM",
-      "description": "Master advanced UI/UX principles and learn how to create intuitive user experiences through hands-on exercises.",
-      "category": "Design",
-      "speaker": "Sarah Anderson",
-    },
-    {
-      "title": "React.js Deep Dive",
-      "date": "March 18, 2024",
-      "time": "10:00 AM",
-      "description": "Explore advanced React concepts, hooks, and state management through practical examples and real-world applications.",
-      "category": "Technology",
-      "speaker": "Michael Chen",
-    },
-    {
-      "title": "Digital Marketing Strategy",
-      "date": "March 20, 2024",
-      "time": "3:00 PM",
-      "description": "Learn effective digital marketing strategies and techniques to grow your business in the modern digital landscape.",
-      "category": "Business",
-      "speaker": "Emily Rodriguez",
-    },
-  ];
+  List<Map<String, dynamic>> workshops = [];
+  bool isLoading = true; // Add a loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchWorkshops();
+  }
+
+  Future<void> _fetchWorkshops() async {
+    try {
+      final QuerySnapshot snapshot =
+      await FirebaseFirestore.instance.collection('workshops').get();
+
+      setState(() {
+        workshops = snapshot.docs.map((doc) {
+          return {
+            "title": doc['title'],
+            "date": doc['date'],
+            "time": doc['time'],
+            "description": doc['description'],
+            "category": doc['category'],
+            "speaker": doc['speaker'],
+            "tags": doc['tags'], // Add tags
+            "image": doc['image'], // Add image URL
+          };
+        }).toList();
+        isLoading = false; // Data has been loaded
+      });
+    } catch (e) {
+      print("Error fetching workshops: $e");
+      setState(() {
+        isLoading = false; // Stop loading even if there's an error
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,17 +64,19 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Upcoming Workshops" ,style: TextStyle(color: Colors.white ,fontWeight: FontWeight.bold),),
+        title: const Text(
+          "Upcoming Workshops",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Constants.PrideAPPCOLOUR,
         elevation: 0,
-        // foregroundColor: Colors.black,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 10,),
+            SizedBox(height: 10),
             Text(
               "Explore and register for our learning sessions",
               style: TextStyle(fontSize: 16, color: Colors.black87),
@@ -109,7 +122,11 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
             ),
             SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
+              child: isLoading
+                  ? Center(
+                child: LogoAnimationWidget(), // Show loading indicator
+              )
+                  : ListView.builder(
                 itemCount: filteredWorkshops.length,
                 itemBuilder: (context, index) {
                   final workshop = filteredWorkshops[index];
@@ -121,7 +138,7 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
                     ),
                     elevation: 2,
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.only(left: 16.0 ,bottom: 10 , right: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -135,26 +152,48 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
                                 ),
                               ),
                               Spacer(),
-                              if (workshop['category'] != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getCategoryColor(
-                                        workshop['category']),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    workshop['category'],
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              if (workshop['tags'] != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Wrap(
+                                    spacing: 4,
+                                    children: workshop['tags']
+                                        .split(',')
+                                        .map<Widget>((tag) {
+                                      return Chip(
+                                        label: Text(
+                                          tag.trim(),
+                                          style: const TextStyle(fontSize: 12, color: Colors.white),
+                                        ),
+                                        backgroundColor: _getCategoryColor(workshop['tags']),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(50), // Fully rounded border
+                                          side: const BorderSide(color: Colors.white, width: 1), // Optional border
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
                                 ),
+                              // if (workshop['tags'] != null)
+                              //   Container(
+                              //     padding: const EdgeInsets.symmetric(
+                              //       horizontal: 8,
+                              //       vertical: 4,
+                              //     ),
+                              //     decoration: BoxDecoration(
+                              //       color: _getCategoryColor(
+                              //           workshop['tags']),
+                              //       borderRadius: BorderRadius.circular(8),
+                              //     ),
+                              //     child: Text(
+                              //       workshop['tags'],
+                              //       style: TextStyle(
+                              //         color: Colors.white,
+                              //         fontSize: 12,
+                              //         fontWeight: FontWeight.bold,
+                              //       ),
+                              //     ),
+                              //   ),
                             ],
                           ),
                           SizedBox(height: 8),
@@ -162,7 +201,8 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
                             children: [
                               Icon(Icons.calendar_today, size: 16),
                               SizedBox(width: 4),
-                              Text("${workshop['date']} • ${workshop['time']}"),
+                              Text(
+                                  "${workshop['date']} • ${workshop['time']}"),
                             ],
                           ),
                           SizedBox(height: 8),
@@ -175,15 +215,25 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
                           SizedBox(height: 8),
                           Row(
                             children: [
-                              CircleAvatar(
-                                radius: 16,
-                                backgroundColor: Colors.grey[300],
-                                child: Icon(Icons.person, color: Colors.white),
-                              ),
+                              // Display speaker image if available
+                              if (workshop['image'] != null)
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundImage: NetworkImage(
+                                      workshop['image']), // Use image URL
+                                ),
+                              if (workshop['image'] == null)
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.grey[300],
+                                  child: Icon(Icons.person,
+                                      color: Colors.white),
+                                ),
                               SizedBox(width: 8),
                               Text(
                                 workshop['speaker'],
-                                style: TextStyle(fontWeight: FontWeight.w500),
+                                style:
+                                TextStyle(fontWeight: FontWeight.w500),
                               ),
                               Spacer(),
                               ElevatedButton(
@@ -193,13 +243,35 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
                                 child: Text('Register'),
                                 style: ElevatedButton.styleFrom(
                                   foregroundColor: Colors.white,
-                                  backgroundColor: Colors.black.withOpacity(.8),// Max width and height
+                                  backgroundColor:
+                                  Colors.black.withOpacity(.8),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10), // Corner radius
+                                    borderRadius:
+                                    BorderRadius.circular(10),
                                   ),
-                                ),),
+                                ),
+                              ),
                             ],
                           ),
+                          // Display tags if available
+                          // if (workshop['tags'] != null)
+                          //   Padding(
+                          //     padding: const EdgeInsets.only(top: 8.0),
+                          //     child: Wrap(
+                          //       spacing: 4,
+                          //       children: workshop['tags']
+                          //           .split(',')
+                          //           .map<Widget>((tag) {
+                          //         return Chip(
+                          //           label: Text(
+                          //             tag.trim(),
+                          //             style: TextStyle(fontSize: 12),
+                          //           ),
+                          //           backgroundColor: Colors.grey[200],
+                          //         );
+                          //       }).toList(),
+                          //     ),
+                          //   ),
                         ],
                       ),
                     ),
@@ -207,7 +279,7 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
                 },
               ),
             ),
-            SizedBox(height: 20,)
+            SizedBox(height: 20),
           ],
         ),
       ),
@@ -223,7 +295,7 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
       case "Business":
         return Colors.purple;
       default:
-        return Colors.grey;
+        return Colors.teal;
     }
   }
 }

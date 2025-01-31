@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:prideconnect/screen/cartscreen.dart';
+import 'package:prideconnect/screen/events.dart';
 
 import '../utils/contstants.dart';
-import 'allworkshop.dart';
-import 'courses.dart';
-import 'explorescreen.dart';
-import 'homescreen.dart';
+import '../screen/allworkshop.dart';
+import '../screen/courses.dart';
+import '../screen/explorescreen.dart';
+import '../screen/homescreen.dart';
 
 class BottomNav extends StatefulWidget {
   @override
@@ -17,7 +19,7 @@ class _BottomNavState extends State<BottomNav> {
   // List of pages to display
   final List<Widget> _pages = [
     HomeScreen(), // Home screen as the default page
-    CoursePage(),
+    Events(),
     AllWorkshopPage(),
     ExplorePage(),
   ];

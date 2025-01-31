@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:prideconnect/screen/postScreen.dart';
 
 import '../utils/contstants.dart';
 
@@ -101,7 +102,9 @@ class _ExplorePageState extends State<ExplorePage> {
                 ],
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_)=>SelectMedia()));
+                },
                 child: const Text('Post'),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(

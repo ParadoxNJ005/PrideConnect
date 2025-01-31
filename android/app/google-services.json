@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1066404534395",
+    "project_id": "first-e6681",
+    "storage_bucket": "first-e6681.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1066404534395:android:adf471ea8c842347796ade",
+        "android_client_info": {
+          "package_name": "com.example.prideconnect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1066404534395-e8qjplu3b9keag91m0noe7svrk9nr4j6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.prideconnect",
+            "certificate_hash": "0dbd4fb01022dac311ca9c3df11c890a127e75d2"
+          }
+        },
+        {
+          "client_id": "1066404534395-bc9c104dp43mcmphciiq3l6l588771f6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2c5NnMXyyXHbm7yp1EFjLBAYpDNjxp3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1066404534395-bc9c104dp43mcmphciiq3l6l588771f6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

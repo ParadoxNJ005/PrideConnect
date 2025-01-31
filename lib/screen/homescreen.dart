@@ -1,8 +1,14 @@
+import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:prideconnect/model/chatuser.dart';
 import 'package:prideconnect/screen/profilePage.dart';
+import '../components/helpr.dart';
+import '../database/Apis.dart';
 import '../utils/contstants.dart';
 import 'aboutpage.dart';
-import 'animatedbutton.dart';
+import '../components/animatedbutton.dart';
 import 'cartscreen.dart';
 import 'events.dart';
 import 'ngos.dart';
@@ -16,7 +22,38 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  final ScrollController _scrollController = ScrollController();
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    // Trigger refresh on initialization
+    APIs.HaveImage = (APIs.me != null);
+    _refreshPage();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _refreshPage();
+    // });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refreshPage() async {
+    // Fetch the current user or other necessary data
+    await APIs.loadCurrentUser();
+
+    // Simulate additional data fetching
+    await Future.delayed(Duration(seconds: 2));
+
+    // Update the state to reflect changes
+    setState((){
+      APIs.HaveImage = (APIs.me != null);
+    });
+  }
 
   void _onBottomNavTap(int index) {
     setState(() {
@@ -24,103 +61,255 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  _handleGoogleBtnClick() {
+    Dialogs.showProgressBar(context);
+    debugPrint("Google Sign-In initiated.");
+
+    _signInWithGoogle().then((user) async {
+      Navigator.pop(context);
+      debugPrint("Sign-In process completed.");
+
+      if (user != null) {
+        final email = user.user?.email;
+        debugPrint("User email retrieved: $email");
+
+        if (email != null) {
+          if (await APIs.userExists()) {
+            debugPrint("User exists in the database. Navigating to HomeScreen.");
+            await APIs.fetchAndStoreCurrentUser();
+            // Navigator.pushReplacement(
+            //   context,
+            //   MaterialPageRoute(builder: (_) => const HomeScreen()),
+            // );
+          } else {
+            debugPrint("New user detected. Creating Google user entry.");
+            APIs.createGoogleUser().then((value) async {
+              await APIs.fetchAndStoreCurrentUser();
+              debugPrint("Google user created successfully.");
+              // Uncomment this if you want to navigate to CollegeDetails screen
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(builder: (_) => const CollegeDetails()),
+              // );
+            }).catchError((e) {
+              debugPrint("Error creating Google user: $e");
+            });
+          }
+        } else {
+          debugPrint("Invalid college email. Prompting user.");
+          Dialogs.showSnackbar(context, "⚠️ Login Via Valid College Id!!");
+
+          debugPrint("Signing out the user from Firebase and Google.");
+          await FirebaseAuth.instance.signOut();
+          await GoogleSignIn().signOut();
+        }
+        _refreshPage();
+      } else {
+        debugPrint("User is null. Sign-In failed or canceled.");
+      }
+    }).catchError((e) {
+      debugPrint("Error during Google Sign-In process: $e");
+    });
+  }
+
+  Future<UserCredential?> _signInWithGoogle() async {
+    try {
+      debugPrint("Checking internet connectivity.");
+      await InternetAddress.lookup('google.com');
+      debugPrint("Internet connectivity confirmed.");
+
+      debugPrint("Initiating Google Sign-In.");
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        debugPrint("Google Sign-In canceled by user.");
+        return null;
+      }
+
+      debugPrint("Google user signed in: ${googleUser.email}");
+      final GoogleSignInAuthentication? googleAuth =
+      await googleUser.authentication;
+
+      debugPrint("Google Auth credentials retrieved. Access Token: ${googleAuth?.accessToken}, ID Token: ${googleAuth?.idToken}");
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      debugPrint("Signing in with Firebase using Google credentials.");
+      return await APIs.auth.signInWithCredential(credential);
+    } catch (e) {
+      debugPrint("Error during _signInWithGoogle: $e");
+      Dialogs.showSnackbar(context, "Something Went Wrong(Check Internet!!)");
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
-        elevation: 0, // Remove the shadow
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu,color: Colors.white,),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage()));
-            },
+    return RefreshIndicator(
+      onRefresh: _refreshPage,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("Pride Connect" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
+          backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
+          elevation: 0, // Remove the shadow
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hero Section
-            Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: MediaQuery.of(context).size.height*0.9,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/a.png'),
-                      fit: BoxFit.cover,
+          actions: [
+            if(APIs.HaveImage)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: InkWell(
+                onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+                child: CircleAvatar(
+                  backgroundImage: NetworkImage(APIs.me!.image),
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          controller: _scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hero Section
+              Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: MediaQuery.of(context).size.height*0.9,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/a.png'),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  width: double.infinity,
-                  height: MediaQuery.of(context).size.height*0.9,
-                  color: Colors.black.withOpacity(0.5),
-                ),
-                Positioned(
-                  bottom: 170,
-                  left: 20,
-                  right: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Empowering the\n LGBTQ+ Community,\n One Step at a Time',
+                  Container(
+                    width: double.infinity,
+                    height: MediaQuery.of(context).size.height*0.9,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                  Positioned(
+                    bottom: 170,
+                    left: 20,
+                    right: 20,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Empowering the\n LGBTQ+ Community,\n One Step at a Time',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 34,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Upskilling, connecting, and transforming lives with career opportunities, counseling, and support.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
                           ),
                         ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Upskilling, connecting, and transforming lives with career opportunities, counseling, and support.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
+                        SizedBox(height: 20),
+                        Column(
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                APIs.fetchCartData();
+                              },
+                              child: Text('Explore Opportunities'),
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.blue.withOpacity(.8), // Background color for ElevatedButton
+                                minimumSize: Size(double.infinity, 50), // Max width and height
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10), // Corner radius
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10), // Space between buttons
+                            OutlinedButton(
+                              onPressed: () async{
+                                await _handleGoogleBtnClick();
+                                // Navigator.push(context, MaterialPageRoute(builder: (_)=>Events()));
+                              },
+                              child: (!APIs.HaveImage) ? Text('Join with Google' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),) : Text('Welcome to Pride Connect' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.transparent, // Background color for OutlinedButton
+                                side: BorderSide(color: Colors.white),
+                                minimumSize: Size(double.infinity, 50), // Max width and height
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10), // Corner radius
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ],
+                    ),
+                  ),
+                  AnimatedIconButton(scrollController: _scrollController),
+                ],
+              ),
+              // Welcome Section
+              Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.grey.withOpacity(0.7),
+                          Colors.grey.withOpacity(0.3),
+                          Colors.grey.withOpacity(0.1),
+                          Colors.white
+                        ],
                       ),
-                      SizedBox(height: 20),
-                      Column(
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical:25 ,horizontal: 16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          Text(
+                            'Welcome to Inclusive\n Learning',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black, // Text color for visibility on gradient
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Empowering the LGBTQ+ community through education and opportunities.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black.withOpacity(0.8), // Slightly transparent text
+                            ),
+                          ),
+                          SizedBox(height: 20),
                           ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_)=>NGOs()));
-                            },
+                            onPressed: () {},
                             child: Text('Explore Opportunities'),
                             style: ElevatedButton.styleFrom(
                               foregroundColor: Colors.white,
-                              backgroundColor: Colors.blue.withOpacity(.8), // Background color for ElevatedButton
-                              minimumSize: Size(double.infinity, 50), // Max width and height
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10), // Corner radius
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 10), // Space between buttons
-                          OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_)=>Events()));
-                            },
-                            child: Text('Join with Google' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Colors.transparent, // Background color for OutlinedButton
-                              side: BorderSide(color: Colors.white),
+                              backgroundColor: Colors.black.withOpacity(.8), // Background color for ElevatedButton
                               minimumSize: Size(double.infinity, 50), // Max width and height
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10), // Corner radius
@@ -129,274 +318,216 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                AnimatedIconButton(scrollController: _scrollController),
-              ],
-            ),
-            // Welcome Section
-            Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.grey.withOpacity(0.7),
-                        Colors.grey.withOpacity(0.3),
-                        Colors.grey.withOpacity(0.1),
-                        Colors.white
-                      ],
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical:25 ,horizontal: 16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Welcome to Inclusive\n Learning',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black, // Text color for visibility on gradient
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'Empowering the LGBTQ+ community through education and opportunities.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black.withOpacity(0.8), // Slightly transparent text
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: Text('Explore Opportunities'),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.black.withOpacity(.8), // Background color for ElevatedButton
-                            minimumSize: Size(double.infinity, 50), // Max width and height
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10), // Corner radius
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              SizedBox(height: 20),
+              // Featured Courses
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Featured Courses',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-            SizedBox(height: 20),
-            // Featured Courses
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Featured Courses',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
               ),
-            ),
-            SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildCourseCard('Web Development', 'Learn modern web technologies', 'assets/images/g.png'),
-                  _buildCourseCard('Business Skills', 'Master entrepreneurship', 'assets/images/b.png'),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
-            // Upcoming Events
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Upcoming Events',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            _buildEventCard('Career Workshop', 'June 15, 2024 · Virtual', 'assets/images/c.png'),
-            SizedBox(height: 20),
-            // Success Stories
-            Container(
-              height: 300,
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(.05), // Background color with some opacity
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-                crossAxisAlignment: CrossAxisAlignment.center, // Center content horizontally
-                children: [
-                  SizedBox(height: 20),
-                  Text(
-                    'Success Stories',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 30),
-                  // Horizontal ScrollView
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        // First Card
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Container(
-                            width: 330, // Fixed width for each card
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                              leading: CircleAvatar(
-                                backgroundImage: AssetImage('assets/images/d.png'),
-                              ),
-                              title: Text('Alex Thompson'),
-                              subtitle: Text('Software Engineer at Google'),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 20),
-                        // Second Card
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Container(
-                            width: 330, // Fixed width for each card
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                              leading: CircleAvatar(
-                                backgroundImage: AssetImage('assets/images/d.png'),
-                              ),
-                              title: Text('Jamie Lee'),
-                              subtitle: Text('Product Manager at Microsoft'),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 20),
-                        // Third Card
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Container(
-                            width: 330, // Fixed width for each card
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                              leading: CircleAvatar(
-                                backgroundImage: AssetImage('assets/images/d.png'),
-                              ),
-                              title: Text('Samira Patel'),
-                              subtitle: Text('UX Designer at Facebook'),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 20),
-                        // Fourth Card
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Container(
-                            width: 330, // Fixed width for each card
-                            child: ListTile(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                              leading: CircleAvatar(
-                                backgroundImage: AssetImage('assets/images/d.png'),
-                              ),
-                              title: Text('Michael Harris'),
-                              subtitle: Text('Data Scientist at Amazon'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
-            // Job Opportunities
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Job Opportunities',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            _buildJobCard('Uber She++', 'User India'),
-            SizedBox(height: 20),
-            // Find Support
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Find Support',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            Center(
-              child: Container(
-                height: 300,
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                color: Colors.grey.withOpacity(0.1),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
+              SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    ClipRRect(borderRadius: BorderRadius.circular(10) ,child: Image.asset('assets/images/f.png',width: double.infinity, fit: BoxFit.cover)),
-                    SizedBox(height: 10),
-                    OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(context,MaterialPageRoute(builder: (_)=>CartPage()));
-                      },
-                      child: Text('Find Nearby NGOs' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.black, // Background color for OutlinedButton
-                        side: BorderSide(color: Colors.black),
-                        minimumSize: Size(double.infinity, 50), // Max width and height
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10), // Corner radius
-                        ),
-                      ),
-                    ),
+                    _buildCourseCard('Web Development', 'Learn modern web technologies', 'assets/images/g.png'),
+                    _buildCourseCard('Business Skills', 'Master entrepreneurship', 'assets/images/b.png'),
                   ],
                 ),
               ),
-            ),
-            SizedBox(height: 20,)
-          ],
-        ),
-      ),
+              SizedBox(height: 20),
+              // Upcoming Events
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Upcoming Events',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              _buildEventCard('Career Workshop', 'June 15, 2024 · Virtual', 'assets/images/c.png'),
+              SizedBox(height: 20),
+              // Success Stories
+              Container(
+                height: 300,
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(.05), // Background color with some opacity
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
+                  crossAxisAlignment: CrossAxisAlignment.center, // Center content horizontally
+                  children: [
+                    SizedBox(height: 20),
+                    Text(
+                      'Success Stories',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 30),
+                    // Horizontal ScrollView
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          // First Card
+                          Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Container(
+                              width: 330, // Fixed width for each card
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                leading: CircleAvatar(
+                                  backgroundImage: AssetImage('assets/images/d.png'),
+                                ),
+                                title: Text('Alex Thompson'),
+                                subtitle: Text('Software Engineer at Google'),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 20),
+                          // Second Card
+                          Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Container(
+                              width: 330, // Fixed width for each card
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                leading: CircleAvatar(
+                                  backgroundImage: AssetImage('assets/images/d.png'),
+                                ),
+                                title: Text('Jamie Lee'),
+                                subtitle: Text('Product Manager at Microsoft'),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 20),
+                          // Third Card
+                          Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Container(
+                              width: 330, // Fixed width for each card
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                leading: CircleAvatar(
+                                  backgroundImage: AssetImage('assets/images/d.png'),
+                                ),
+                                title: Text('Samira Patel'),
+                                subtitle: Text('UX Designer at Facebook'),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 20),
+                          // Fourth Card
+                          Card(
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Container(
+                              width: 330, // Fixed width for each card
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                leading: CircleAvatar(
+                                  backgroundImage: AssetImage('assets/images/d.png'),
+                                ),
+                                title: Text('Michael Harris'),
+                                subtitle: Text('Data Scientist at Amazon'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+              // Job Opportunities
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Job Opportunities',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              _buildJobCard('Uber She++', 'User India'),
+              SizedBox(height: 20),
+              // Find Support
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Find Support',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              Center(
+                child: Container(
+                  height: 300,
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.grey.withOpacity(0.1),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ClipRRect(borderRadius: BorderRadius.circular(10) ,child: Image.asset('assets/images/f.png',width: double.infinity, fit: BoxFit.cover)),
+                      SizedBox(height: 10),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(context,MaterialPageRoute(builder: (_)=>CartPage()));
+                        },
+                        child: Text('Find Nearby NGOs' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.black, // Background color for OutlinedButton
+                          side: BorderSide(color: Colors.black),
+                          minimumSize: Size(double.infinity, 50), // Max width and height
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10), // Corner radius
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 20,)
+            ],
+          ),
+        )
 
+      ),
     );
   }
 

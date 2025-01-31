@@ -1,5 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:prideconnect/components/logoanimaionwidget.dart';
 
+class CartModel {
+  String? image;
+  String? des;
+  String? coins;
+  String? name;
+  String? type;
+
+  CartModel({this.image, this.des, this.coins, this.name, this.type});
+
+  CartModel.fromJson(Map<String, dynamic> json) {
+    image = json["image"];
+    des = json["des"];
+    coins = json["coins"];
+    name = json["name"];
+    type = json["type"];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> _data = <String, dynamic>{};
+    _data["image"] = image;
+    _data["des"] = des;
+    _data["coins"] = coins;
+    _data["name"] = name;
+    _data["type"] = type;
+    return _data;
+  }
+}
 
 class CartPage extends StatefulWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -9,6 +38,51 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  List<CartModel> allProducts = [];
+  List<CartModel> filteredProducts = [];
+  String selectedCategory = "All";
+  String searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCartItems();
+  }
+
+  Future<void> fetchCartItems() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('cart').get();
+      setState(() {
+        allProducts = snapshot.docs
+            .map((doc) => CartModel.fromJson(doc.data() as Map<String, dynamic>))
+            .toList();
+        filteredProducts = allProducts; // Initially show all items
+      });
+    } catch (e) {
+      print("Error fetching cart items: $e");
+    }
+  }
+
+  void filterByCategory(String category) {
+    setState(() {
+      selectedCategory = category;
+      filteredProducts = category == "All"
+          ? allProducts
+          : allProducts.where((item) => item.type == category).toList();
+    });
+  }
+
+  void searchItems(String query) {
+    setState(() {
+      searchQuery = query.toLowerCase();
+      filteredProducts = allProducts
+          .where((item) =>
+      (selectedCategory == "All" || item.type == selectedCategory) &&
+          (item.name?.toLowerCase().contains(searchQuery) ?? false))
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,10 +97,10 @@ class _CartPageState extends State<CartPage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
             ),
             Row(
-              children: [
-                const Icon(Icons.monetization_on_outlined, color: Colors.black),
-                const SizedBox(width: 5),
-                const Text(
+              children: const [
+                Icon(Icons.monetization_on_outlined, color: Colors.black),
+                SizedBox(width: 5),
+                Text(
                   "2,450",
                   style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
@@ -42,6 +116,7 @@ class _CartPageState extends State<CartPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: TextField(
+              onChanged: searchItems,
               decoration: InputDecoration(
                 hintText: "Search items...",
                 prefixIcon: const Icon(Icons.search),
@@ -61,27 +136,28 @@ class _CartPageState extends State<CartPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildCategoryChip("All", isSelected: true),
-                _buildCategoryChip("Clothing"),
-                _buildCategoryChip("Accessories"),
-                _buildCategoryChip("Digital"),
+                _buildCategoryChip("All", isSelected: selectedCategory == "All"),
+                _buildCategoryChip("Clothing", isSelected: selectedCategory == "Clothing"),
+                _buildCategoryChip("Accessories", isSelected: selectedCategory == "Accessories"),
+                _buildCategoryChip("Digital", isSelected: selectedCategory == "Digital"),
               ],
             ),
           ),
-          const SizedBox(height: 16),
           // Products Grid
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: filteredProducts.isEmpty
+                ? const Center(child: LogoAnimationWidget())
+                : GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 childAspectRatio: 0.7,
               ),
-              itemCount: products.length,
+              itemCount: filteredProducts.length,
               itemBuilder: (context, index) {
-                return _buildProductCard(products[index]);
+                return _buildProductCard(filteredProducts[index]);
               },
             ),
           ),
@@ -91,23 +167,26 @@ class _CartPageState extends State<CartPage> {
   }
 
   Widget _buildCategoryChip(String label, {bool isSelected = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.black : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    return GestureDetector(
+      onTap: () => filterByCategory(label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildProductCard(Product product) {
+  Widget _buildProductCard(CartModel product) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -124,106 +203,47 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  product.imageUrl,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              // if (product.tag != null)
-              //   Positioned(
-              //     top: 8,
-              //     left: 8,
-              //     child: Container(
-              //       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              //       decoration: BoxDecoration(
-              //         color: product.tagColor,
-              //         borderRadius: BorderRadius.circular(10),
-              //       ),
-              //       child: Text(
-              //         product.tag!,
-              //         style: const TextStyle(fontSize: 12, color: Colors.white),
-              //       ),
-              //     ),
-              //   ),
-            ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: product.image != null
+                ? Image.network(
+              product.image!,
+              height: 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            )
+                : Container(
+              height: 120,
+              width: double.infinity,
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.image, size: 50),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            product.name,
+            product.name ?? "Unknown",
             style: const TextStyle(fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Text(
-            "🪙 ${product.price}",
+            "🪙 ${product.coins ?? "0"}",
             style: const TextStyle(color: Colors.black),
           ),
           const Spacer(),
-          Container(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text("Buy Now" , style: TextStyle(color: Colors.white),),
             ),
+            child: const Text("Buy Now", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 }
-
-// Product Model
-class Product {
-  final String name;
-  final String imageUrl;
-  final int price;
-  final String? tag;
-  final Color tagColor;
-
-  Product({required this.name, required this.imageUrl, required this.price, this.tag, required this.tagColor});
-}
-
-// Sample Products
-final List<Product> products = [
-  Product(
-    name: "Rainbow Pride T-Shirt",
-    imageUrl: "assets/images/i.png",
-    price: 850,
-    tag: "Limited",
-    tagColor: Colors.purple,
-  ),
-  Product(
-    name: "Pride Enamel Pin",
-    imageUrl: "assets/images/h.png",
-    price: 350,
-    tag: "New",
-    tagColor: Colors.blue,
-  ),
-  Product(
-    name: "Pride Wallpaper Pack",
-    imageUrl: "assets/images/j.png",
-    price: 150,
-    tag: "Digital",
-    tagColor: Colors.green,
-  ),
-  Product(
-    name: "Rainbow Bracelet",
-    imageUrl: "assets/images/k.png",
-    price: 250,
-    tag: "Sale",
-    tagColor: Colors.red,
-  ),
-];

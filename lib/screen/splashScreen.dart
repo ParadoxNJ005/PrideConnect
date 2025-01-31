@@ -1,8 +1,12 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:prideconnect/database/Apis.dart';
+import 'package:prideconnect/screen/homescreen.dart';
+import 'package:prideconnect/screen/profilePage.dart';
 import '../utils/contstants.dart';
-import 'bottomnav.dart';
+import '../components/bottomnav.dart';
 
 class SplashScreens extends StatefulWidget {
   const SplashScreens({super.key});
@@ -13,37 +17,28 @@ class SplashScreens extends StatefulWidget {
 
 class _SplashScreensState extends State<SplashScreens>{
 
-  @override
-  void initState(){
+  void initState() {
     super.initState();
-
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Constants.PrideAPPCOLOUR,
+      statusBarColor: Constants.APPCOLOUR,
     ));
     // Navigate after 4 seconds
-    Future.delayed(Duration(seconds: 2), () {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=> BottomNav()));
-      // _navigateToNextScreen();
+    Future.delayed(Duration(seconds: 4), () {
+      _navigateToNextScreen();
     });
-
   }
 
-  @override
-  void dispose(){
-    super.dispose();
-  }
+  Future<void> _navigateToNextScreen() async {
+    final storage = new FlutterSecureStorage();
+    final temp = await storage.read(key: "currentUser");
 
-  // Future<void> _navigateToNextScreen() async {
-  //   final storage = new FlutterSecureStorage();
-  //   final temp = await storage.read(key: "me");
-  //   log("${temp}");
-  //
-  //   if (temp != null) {
-  //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>HomePage()));
-  //   } else {
-  //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>Landingpage()));
-  //   }
-  // }
+    if (temp != null){
+      await APIs.loadCurrentUser();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>BottomNav()));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>BottomNav()));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

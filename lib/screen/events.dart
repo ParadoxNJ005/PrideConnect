@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:prideconnect/components/logoanimaionwidget.dart';
 
 class Events extends StatefulWidget {
   @override
@@ -6,9 +8,13 @@ class Events extends StatefulWidget {
 }
 
 class _EventsState extends State<Events> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String? selectedVenue; // Null means "View All" is selected
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text("Active Campaigns"),
         centerTitle: false,
@@ -18,37 +24,114 @@ class _EventsState extends State<Events> {
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),
-            onPressed: () {
-              // Handle menu action
-            },
+            onPressed: () {},
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              _buildEventCard(
-                title: "Tech Career Fair 2024",
-                date: "June 15, 2024",
-                location: "San Francisco Convention Center",
-                capacity: 500,
-                imageUrl: "assets/images/l.png", // Replace with actual image URL
-              ),
-              const SizedBox(height: 16),
-              _buildEventCard(
-                title: "Tech Career Fair 2024",
-                date: "June 15, 2024",
-                location: "San Francisco Convention Center",
-                capacity: 500,
-                imageUrl: "assets/images/l.png", // Replace with actual image URL
-              ),
-            ],
+      body: Column(
+        children: [
+          // Venue Filter Dropdown
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('campaign').snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const SizedBox();
+                }
+
+                // Extract unique venue names
+                List<String> venues = snapshot.data!.docs
+                    .map((doc) => (doc.data() as Map<String, dynamic>)['venue']?.toString() ?? "")
+                    .toSet()
+                    .toList();
+
+                // Add "View All" option
+                venues.insert(0, "View All");
+
+                return Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black, width: 1.2), // Border color & thickness
+                    borderRadius: BorderRadius.circular(8.0), // Rounded corners
+                    color: Colors.white, // Background color
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Inner padding
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedVenue ?? "View All",
+                      hint: const Text(
+                        "Choose a venue",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black54),
+                      ),
+                      isExpanded: true,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedVenue = (value == "View All") ? null : value;
+                        });
+                      },
+                      items: venues.map((venue) {
+                        return DropdownMenuItem(
+                          value: venue,
+                          child: Text(
+                            venue,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        );
+                      }).toList(),
+                      dropdownColor: Colors.white, // Dropdown background color
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.black), // Custom dropdown icon
+                      borderRadius: BorderRadius.circular(8), // Rounded corners for dropdown
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+
+          // Campaigns List
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('campaign').snapshots(), // No date sorting
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: LogoAnimationWidget());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("No campaigns available."));
+                }
+
+                var campaigns = snapshot.data!.docs
+                    .map((doc) => doc.data() as Map<String, dynamic>)
+                    .where((data) => selectedVenue == null || data['venue'] == selectedVenue)
+                    .toList();
+
+                if (campaigns.isEmpty) {
+                  return const Center(child: Text("No campaigns found for this venue."));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: campaigns.length,
+                  itemBuilder: (context, index) {
+                    var data = campaigns[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildEventCard(
+                        title: data['name'] ?? "No Title",
+                        date: data['date'] ?? "No Date",
+                        location: data['venue'] ?? "No Location",
+                        capacity: 500, // Modify if needed
+                        imageUrl: data['image'] ?? "assets/images/l.png",
+                        registerUrl: data['register'] ?? "",
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -59,6 +142,7 @@ class _EventsState extends State<Events> {
     required String location,
     required int capacity,
     required String imageUrl,
+    required String registerUrl,
   }) {
     return Card(
       elevation: 2,
@@ -72,11 +156,17 @@ class _EventsState extends State<Events> {
               topLeft: Radius.circular(8.0),
               topRight: Radius.circular(8.0),
             ),
-            child: Image.asset(
+            child: Image.network(
               imageUrl,
               height: 150,
               width: double.infinity,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Image.asset(
+                "assets/images/l.png",
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           Padding(
@@ -96,10 +186,7 @@ class _EventsState extends State<Events> {
                   children: [
                     const Icon(Icons.calendar_today, size: 16),
                     const SizedBox(width: 8),
-                    Text(
-                      date,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    Text(date, style: const TextStyle(fontSize: 14)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -107,10 +194,7 @@ class _EventsState extends State<Events> {
                   children: [
                     const Icon(Icons.location_on, size: 16),
                     const SizedBox(width: 8),
-                    Text(
-                      location,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    Text(location, style: const TextStyle(fontSize: 14)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -118,10 +202,7 @@ class _EventsState extends State<Events> {
                   children: [
                     const Icon(Icons.people, size: 16),
                     const SizedBox(width: 8),
-                    Text(
-                      "Capacity: $capacity",
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    Text("Capacity: $capacity", style: const TextStyle(fontSize: 14)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -129,13 +210,18 @@ class _EventsState extends State<Events> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          if (registerUrl.isNotEmpty) {
+                            // Open the registration link
+                            // launchUrl(Uri.parse(registerUrl));  // Uncomment if using url_launcher
+                          }
+                        },
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          backgroundColor: Colors.black.withOpacity(.8), // Background color for ElevatedButton
-                          minimumSize: Size(double.infinity, 50), // Max width and height
+                          backgroundColor: Colors.black.withOpacity(.8),
+                          minimumSize: const Size(double.infinity, 50),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10), // Corner radius
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: const Text('Register Now'),
@@ -145,18 +231,21 @@ class _EventsState extends State<Events> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_)=>Events()));
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => Events()));
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.transparent, // Background color for OutlinedButton
-                          side: BorderSide(color: Colors.black),
-                          minimumSize: Size(double.infinity, 50), // Max width and height
+                          foregroundColor: Colors.black,
+                          backgroundColor: Colors.transparent,
+                          side: const BorderSide(color: Colors.black),
+                          minimumSize: const Size(double.infinity, 50),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10), // Corner radius
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('Learn Now' ,style: TextStyle(color: Colors.black , fontWeight: FontWeight.w500 , fontSize: 18),),
+                        child: const Text(
+                          'Learn More',
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
+                        ),
                       ),
                     ),
                   ],
