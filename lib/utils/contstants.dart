@@ -15,7 +15,7 @@ class Constants {
   static const Color DARK_SKYBLUE = Color(0xff00BCD4); // theme color
   static const Color BLACK = Color(0xff000000); // subjectcode color
   static const Color WHITE = Color(0xffFFFFFF);
-  static const Color APPCOLOUR = Color(0xff407BFF);
+  static const Color APPCOLOUR = const Color(0xffFFFFFF);
   static const Color searchBarColour = Color(0xffF4F4F4);
   static const Color subjectBoxColour = Color(0xffE8E5EF);
   static const Color PrideAPPCOLOUR = const Color(0xFF171A1F);

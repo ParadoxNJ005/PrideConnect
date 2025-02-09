@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:prideconnect/components/logoanimaionwidget.dart';
+import 'package:prideconnect/screen/profilePage.dart';
+import 'package:prideconnect/utils/contstants.dart';
 
 class Events extends StatefulWidget {
   @override
@@ -14,17 +16,27 @@ class _EventsState extends State<Events> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Constants.PrideAPPCOLOUR,
       appBar: AppBar(
-        title: const Text("Active Campaigns"),
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text("Events Nearby" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
+        backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
+        elevation: 0, // Remove the shadow
+        leading: IconButton(onPressed: (){Navigator.pop(context);}, icon: Icon(Icons.arrow_back,color: Colors.white,)),
+        // leading:
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+        // ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {},
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: InkWell(
+              onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+              ),
+            ),
           ),
         ],
       ),
@@ -32,7 +44,7 @@ class _EventsState extends State<Events> {
         children: [
           // Venue Filter Dropdown
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(vertical: 16.0 , horizontal: 30),
             child: StreamBuilder<QuerySnapshot>(
               stream: _firestore.collection('campaign').snapshots(),
               builder: (context, snapshot) {
@@ -55,7 +67,7 @@ class _EventsState extends State<Events> {
                     borderRadius: BorderRadius.circular(8.0), // Rounded corners
                     color: Colors.white, // Background color
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Inner padding
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 4), // Inner padding
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: selectedVenue ?? "View All",
@@ -111,7 +123,7 @@ class _EventsState extends State<Events> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 30.0 ,vertical: 16),
                   itemCount: campaigns.length,
                   itemBuilder: (context, index) {
                     var data = campaigns[index];
@@ -165,7 +177,7 @@ class _EventsState extends State<Events> {
                 "assets/images/l.png",
                 height: 150,
                 width: double.infinity,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
               ),
             ),
           ),

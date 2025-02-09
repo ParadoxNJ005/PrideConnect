@@ -3,11 +3,11 @@ import 'dart:io';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:video_thumbnail/video_thumbnail.dart';
-
+import 'package:prideconnect/screen/profilePage.dart';
 import '../components/dashedborder.dart';
 import '../components/helpr.dart';
 import '../components/logoanimaionwidget.dart';
@@ -33,12 +33,12 @@ class _SelectMediaState extends State<SelectMedia> {
   }
 
   @override
-  void dispose(){
+  void dispose() {
     super.dispose();
     _captionController.dispose();
   }
 
-  void _showLimitWarningDialog(){
+  void _showLimitWarningDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -55,7 +55,6 @@ class _SelectMediaState extends State<SelectMedia> {
   }
 
   Future<void> _pickImageFromCamera() async {
-
     if (mediaUrls.length >= maxMediaCount) {
       _showLimitWarningDialog();
       return;
@@ -74,18 +73,12 @@ class _SelectMediaState extends State<SelectMedia> {
     }
   }
 
-
-  // Pick images from gallery
   Future<void> _pickImagesFromGallery() async {
-    // String useremail = returnUserId();
-    // PageTracker.trackGalleryImages("SelectMediaPage", "Dont Know", useremail);
-
     if (mediaUrls.length >= maxMediaCount) {
       _showLimitWarningDialog();
       return;
     }
 
-    // Request permission for gallery access
     final permissionStatus = await Permission.photos.request();
     if (!permissionStatus.isGranted) {
       final List<XFile>? images = await _picker.pickMultiImage();
@@ -102,24 +95,18 @@ class _SelectMediaState extends State<SelectMedia> {
     }
   }
 
-
-  // Pick video from gallery
   Future<void> _pickVideoFromGallery() async {
-    // String useremail = returnUserId();
-    // PageTracker.trackGalleryVideos("SelectMediaPage", "Dont Know", useremail);
-
     if (mediaUrls.length >= maxMediaCount) {
       _showLimitWarningDialog();
       return;
     }
 
-    // Request permission for gallery access
     final permissionStatus = await Permission.photos.request();
     if (!permissionStatus.isGranted) {
       final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
       if (video != null) {
         setState(() {
-          mediaUrls.add(File(video.path)); // Correct handling of File
+          mediaUrls.add(File(video.path));
         });
       }
     } else {
@@ -127,23 +114,6 @@ class _SelectMediaState extends State<SelectMedia> {
     }
   }
 
-
-  // Generate thumbnail for video
-  Future<String?> _generateThumbnail(String videoPath) async {
-    final String thumbnailPath = '${(await getTemporaryDirectory()).path}/thumbnail.png';
-    final String? generatedThumbnail = await VideoThumbnail.thumbnailFile(
-      video: videoPath,
-      thumbnailPath: thumbnailPath,
-      imageFormat: ImageFormat.PNG,
-      maxWidth: 128,
-      maxHeight: 128,
-      quality: 75,
-    );
-    return generatedThumbnail;
-  }
-
-
-  // Remove image/video
   void _removeMedia(int index) {
     setState(() {
       mediaUrls.removeAt(index);
@@ -153,154 +123,191 @@ class _SelectMediaState extends State<SelectMedia> {
   void _navigateToAddPost() async {
     if (mediaUrls.isNotEmpty) {
       setState(() {
-        _isLoading = true; // Start loading
+        _isLoading = true;
       });
 
-      // SellForm sellForm = SellForm(
-      //   city: _CityController.text.toString(),
-      //   state: _StateController.text.toString(),
-      //   address: _locationController.text.toString(),
-      //   orgName: _captionController.text.toString(),
-      //   size: selectedScrapSize,
-      //   images: [],
-      //   remark: _RemarkController.text.toString(),
-      //   latitude: _selectedLatitude,  // Example latitude
-      //   longitude: _selectedLongitude, // Example longitude
-      // );
-      //
-      // await APIs.sellProductImages(mediaUrls, sellForm); // Pass SellForm data
-      // Dialogs.showSnackbar(context, "Upload Successfull");
-      // setState(() {
-      //   _isLoading = false; // Stop loading
-      // });
+      // Simulate a network call
+      await Future.delayed(Duration(seconds: 2));
 
+      setState(() {
+        _isLoading = false;
+      });
+
+      Dialogs.showSnackbar(context, "Upload Successful");
     } else {
       Dialogs.showSnackbar(context, "Upload At least One Image/Video");
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Stack(
-        children:[
-          Scaffold(
-            backgroundColor: Constants.APPCOLOUR,
-            appBar: AppBar(
-              backgroundColor: Constants.APPCOLOUR,
-              automaticallyImplyLeading: false,
-              leading: IconButton(onPressed: (){Navigator.pop(context);}, icon: const Icon(Icons.arrow_back_ios , color: Colors.black,)),
-              centerTitle: false,
-              elevation: 0.0,
+      children: [
+        Scaffold(
+          backgroundColor: Constants.PrideAPPCOLOUR,
+          appBar: AppBar(
+            title: Text("Pride Connect", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            backgroundColor: Constants.PrideAPPCOLOUR,
+            elevation: 0,
+            leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(Icons.arrow_back, color: Colors.white),
             ),
-            body: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 26.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      const Text(
-                        "Photos",
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-                      ),
-                      const SizedBox(height: 8),
-                      temp(),
-                      const SizedBox(height: 25),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Remark",
-                            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-                          ),
-                          const SizedBox(height: 5),
-                          TextField(
-                            maxLines: 2,
-                            controller: _captionController,
-                            decoration: InputDecoration(
-                              hintText: "Add your remark here ",
-                              floatingLabelBehavior: FloatingLabelBehavior.always,
-                              hintStyle: TextStyle(
-                                color: Colors.black.withOpacity(0.6),
-                                fontSize: 18.0,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                borderSide: BorderSide(
-                                  color: Colors.black.withOpacity(0.6),
-                                  width: 1.0,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                borderSide: BorderSide(
-                                  color: Colors.black.withOpacity(0.6),
-                                  width: 1.0,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                borderSide: BorderSide(
-                                  color: Colors.black.withOpacity(0.6),
-                                  width: 1.0,
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
-                            ),
-                            style: TextStyle(
-                              color: Colors.black.withOpacity(0.6),
-                              fontSize: 18.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 100),
-                    ],
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage()));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.asset('assets/images/loading.png', fit: BoxFit.contain),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.5), // Overlay color with transparency
-              child: const Center(
-                child: LogoAnimationWidget(), // Loading indicator
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 26.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    Lottie.asset(
+                      "assets/animation/pq.json",
+                      height: 300, // Adjust height
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Photos",
+                      style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    temp(),
+                    const SizedBox(height: 25),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Remark",
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16, color: Colors.white),
+                        ),
+                        const SizedBox(height: 5),
+                        TextField(
+                          maxLines: 2,
+                          controller: _captionController,
+                          decoration: InputDecoration(
+                            hintText: "Add your remark here",
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 18.0,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.6),
+                                width: 1.0,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.6),
+                                width: 1.0,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.6),
+                                width: 1.0,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
+                          ),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          bottomNavigationBar: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity, // Full width
+              height: 50, // Adjustable height
+              child: ElevatedButton.icon(
+                onPressed: _navigateToAddPost,
+                icon: Icon(Icons.send, color: Colors.white),
+                label: Text("Post", style: TextStyle(color: Colors.white, fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent, // Transparent background
+                  side: BorderSide(color: Colors.grey.withOpacity(0.5), width: 2), // White border
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8), // Slightly rounded corners
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20), // Adjust padding
+                ),
               ),
             ),
-        ]
+          ),
+
+        ),
+        if (_isLoading)
+          Container(
+            color: Colors.black.withOpacity(0.5),
+            child: const Center(
+              child: LogoAnimationWidget(),
+            ),
+          ),
+      ],
     );
   }
-  Widget temp(){
+
+  Widget temp() {
     final size = MediaQuery.of(context).size;
-    return  Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Stack(
           children: [
             DashedBorder(
-              color:Colors.grey,
+              color: Colors.grey,
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 height: 180,
                 width: double.infinity,
                 alignment: Alignment.center,
-                child: IconButton(icon:  Icon(Icons.image_search_rounded , color: Colors.grey.withOpacity(0.5) , size: 65,), onPressed: (){
-                  _pickImageFromCamera();
-                }, ),
+                child: IconButton(
+                  icon: Icon(Icons.image_search_rounded, color: Colors.grey.withOpacity(0.5), size: 65),
+                  onPressed: () {
+                    _pickImageFromCamera();
+                  },
+                ),
               ),
             ),
             Positioned(
               bottom: 10,
               right: 10,
               child: IconButton(
-                icon: Icon(Icons.photo_library,
-                    color: Colors.grey[700], size: 30),
+                icon: Icon(Icons.photo_library, color: Colors.grey[700], size: 30),
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
@@ -309,15 +316,14 @@ class _SelectMediaState extends State<SelectMedia> {
                       children: [
                         ListTile(
                           tileColor: Constants.APPCOLOUR,
-                          leading: Icon(Icons.image , color: Colors.black,),
-                          title: Text('Pick Image from Gallery' , style: TextStyle(color: Colors.black),),
+                          leading: Icon(Icons.image, color: Colors.black),
+                          title: Text('Pick Image from Gallery', style: TextStyle(color: Colors.black)),
                           onTap: _pickImagesFromGallery,
                         ),
                         ListTile(
                           tileColor: Constants.APPCOLOUR,
-                          leading: Icon(Icons.video_library , color: Colors.black
-                            ,),
-                          title: Text('Pick Video from Gallery' , style: TextStyle(color: Colors.black),),
+                          leading: Icon(Icons.video_library, color: Colors.black),
+                          title: Text('Pick Video from Gallery', style: TextStyle(color: Colors.black)),
                           onTap: _pickVideoFromGallery,
                         ),
                       ],
@@ -337,15 +343,16 @@ class _SelectMediaState extends State<SelectMedia> {
               child: Text(
                 'Recent',
                 style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
           SizedBox(height: 26),
           Container(
-            height: size.height * .25, // Fixed height
+            height: size.height * .25,
             child: GridView.builder(
               shrinkWrap: true,
               scrollDirection: Axis.horizontal,
@@ -353,7 +360,7 @@ class _SelectMediaState extends State<SelectMedia> {
                 crossAxisCount: 1,
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
-                childAspectRatio: 200 / 150, // Adjust aspect ratio to fit the new dimensions
+                childAspectRatio: 200 / 150,
               ),
               itemCount: mediaUrls.length,
               itemBuilder: (context, index) {
@@ -364,59 +371,23 @@ class _SelectMediaState extends State<SelectMedia> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(14.0),
                       child: Container(
-                        width: 150, // Updated fixed width
-                        height: 200, // Fixed height
+                        width: 150,
+                        height: 200,
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black.withOpacity(0.3), width: 1),
                           borderRadius: BorderRadius.circular(10.0),
                         ),
                         child: mediaPath.path.endsWith('.mp4')
-                            ? FutureBuilder<String?>(
-                          future: _generateThumbnail(mediaPath.path),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                              return Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.file(
-                                    File(snapshot.data!),
-                                    width: 150, // Updated fixed width
-                                    height: 200, // Fixed height
-                                    fit: BoxFit.cover, // Crops to fill the fixed box
-                                  ),
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: CircleAvatar(
-                                      backgroundColor: Colors.black54,
-                                      radius: 12,
-                                      child: Icon(
-                                        Icons.play_arrow,
-                                        color: Colors.black,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              return const Center(
-                                child: LogoAnimationWidget(), // Loading widget
-                              );
-                            }
-                          },
-                        )
+                            ? Container()
                             : Image.file(
                           mediaPath,
-                          // width: 150, // Updated fixed width
-                          // height: 200, // Fixed height
-                          fit: BoxFit.cover, // Crops to fill the fixed box
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
                     Positioned(
-                      top: 0, // Top margin
-                      right: 11, // Right margin relative to the card
+                      top: 0,
+                      right: 11,
                       child: GestureDetector(
                         onTap: () => _removeMedia(index),
                         child: CircleAvatar(
@@ -439,8 +410,7 @@ class _SelectMediaState extends State<SelectMedia> {
         SizedBox(
           height: 10,
         ),
-        if(mediaUrls.isNotEmpty )
-          SizedBox(height: 5),
+        if (mediaUrls.isNotEmpty) SizedBox(height: 5),
       ],
     );
   }

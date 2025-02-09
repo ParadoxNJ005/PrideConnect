@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prideconnect/database/Apis.dart';
 import 'package:prideconnect/model/chatuser.dart';
+import 'package:prideconnect/utils/contstants.dart';
 
 class ProfilePage extends StatefulWidget {
   ProfilePage({super.key});
@@ -96,17 +97,25 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Constants.PrideAPPCOLOUR,
       appBar: AppBar(
-        title: Text('Profile', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.black,
+        title: const Text(
+          "Profile",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Constants.PrideAPPCOLOUR,
         elevation: 0,
+        leading: Icon(Icons.arrow_back,color: Colors.white,),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              // Add settings navigation logic here
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: InkWell(
+              onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+              ),
+            ),
           ),
         ],
       ),

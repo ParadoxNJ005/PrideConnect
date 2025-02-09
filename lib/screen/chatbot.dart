@@ -1,7 +1,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
-import 'logo.dart';
+import 'package:prideconnect/screen/profilePage.dart';
+import 'package:prideconnect/utils/contstants.dart';
+import '../components/logo.dart';
 
 class ChatBot extends StatefulWidget {
   @override
@@ -28,32 +30,6 @@ class _ChatBotState extends State<ChatBot> {
 
   Future<void> _sendMessage(String message) async {
     if (message.trim().isEmpty) return;
-
-    // Define allowed keywords
-    const allowedKeywords = [
-      "recycle", "recycling", "reusable", "reuse", "urjasetu", "renewable",
-      "renewables", "sustainable", "sustainability", "eco-friendly", "energy",
-      "carbon footprint", "electricity",
-      "biogas", "green energy", "clean energy", "environment", "climate change",
-      "zero waste", "plastic waste", "upcycle",
-      "natural resources","energy efficiency", "sustainable development" , "energy storage", "renewable solutions", "climate action",
-      "clean technology", "sustainable energy",
-      "environmental impact"
-    ];
-
-    // Check if the message contains any of the allowed keywords
-    final containsAllowedKeyword = allowedKeywords.any(
-          (keyword) => message.toLowerCase().contains(keyword.toLowerCase()),
-    );
-
-    if (!containsAllowedKeyword) {
-      if (mounted) {
-        setState(() {
-          _messages.add({"bot": "I can only respond to questions related to Urja Setu, energy generation, renewables, and similar topics."});
-        });
-      }
-      return;
-    }
 
     if (mounted) {
       setState(() {
@@ -95,13 +71,27 @@ class _ChatBotState extends State<ChatBot> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Constants.PrideAPPCOLOUR,
       appBar: AppBar(
-          title: Text('ChatBot', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          leading: IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        title: const Text(
+          "Chat Bot",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Constants.PrideAPPCOLOUR,
+        elevation: 0,
+        leading: Icon(Icons.arrow_back,color: Colors.white,),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: InkWell(
+              onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+              ),
+            ),
           ),
-          backgroundColor: Colors.blueAccent,
+        ],
       ),
       body: Column(
         children: [
@@ -113,26 +103,37 @@ class _ChatBotState extends State<ChatBot> {
                 final isUserMessage = message.containsKey("user");
 
                 return Container(
-                  alignment: isUserMessage
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 25),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isUserMessage
-                          ? Colors.grey[200]
-                          : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
+                      color: isUserMessage ? Colors.blueAccent : Colors.grey[300], // User and bot message colors
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(12),
+                        topRight: const Radius.circular(12),
+                        bottomLeft: isUserMessage ? const Radius.circular(12) : Radius.zero,
+                        bottomRight: isUserMessage ? Radius.zero : const Radius.circular(12),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                          offset: const Offset(2, 2), // Shadow direction
+                        ),
+                      ],
                     ),
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     child: Text(
-                      isUserMessage
-                          ? message["user"]!
-                          : message["bot"]!,
-                      style: TextStyle(fontSize: 16),
+                      isUserMessage ? message["user"]! : message["bot"]!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isUserMessage ? Colors.white : Colors.black, // Adjusted text color for contrast
+                      ),
                     ),
                   ),
                 );
+
               },
             ),
           ),
@@ -142,7 +143,7 @@ class _ChatBotState extends State<ChatBot> {
               child: LogoAnimationWidget(),
             ),
           Padding(
-            padding: EdgeInsets.all(8.0),
+            padding: EdgeInsets.only(left: 25.0 ,right: 25.0,bottom: 20,top: 20),
             child: Row(
               children: [
                 Expanded(

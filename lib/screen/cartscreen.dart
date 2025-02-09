@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:prideconnect/components/logoanimaionwidget.dart';
+import 'package:prideconnect/screen/profilePage.dart';
+import 'package:prideconnect/utils/contstants.dart';
 
 class CartModel {
   String? image;
@@ -87,28 +89,29 @@ class _CartPageState extends State<CartPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "logo",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+        title: Text("Pride Connect" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
+        backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
+        elevation: 0, // Remove the shadow
+        leading: IconButton(onPressed: (){Navigator.pop(context);}, icon: Icon(Icons.arrow_back,color: Colors.white,)),
+        // leading:
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+        // ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: InkWell(
+              onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+              ),
             ),
-            Row(
-              children: const [
-                Icon(Icons.monetization_on_outlined, color: Colors.black),
-                SizedBox(width: 5),
-                Text(
-                  "2,450",
-                  style: TextStyle(fontSize: 16, color: Colors.black),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+      backgroundColor: Constants.PrideAPPCOLOUR,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -121,7 +124,6 @@ class _CartPageState extends State<CartPage> {
                 hintText: "Search items...",
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.grey.shade200,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -132,7 +134,7 @@ class _CartPageState extends State<CartPage> {
           ),
           // Categories
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -172,7 +174,7 @@ class _CartPageState extends State<CartPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.grey.shade200,
+          color: isSelected ? Constants.SKYBLUE : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -206,17 +208,17 @@ class _CartPageState extends State<CartPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: product.image != null
-                ? Image.network(
-              product.image!,
-              height: 120,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            )
+                    ? Image.network(
+                  product.image!,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                )
                 : Container(
-              height: 120,
-              width: double.infinity,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.image, size: 50),
+                height: 120,
+                width: double.infinity,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image, size: 50),
             ),
           ),
           const SizedBox(height: 8),
@@ -231,17 +233,34 @@ class _CartPageState extends State<CartPage> {
             "🪙 ${product.coins ?? "0"}",
             style: const TextStyle(color: Colors.black),
           ),
-          const Spacer(),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              // Adds spacing between buttons
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Constants.PrideAPPCOLOUR,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text("Buy Now", style: TextStyle(color: Colors.white)),
               ),
-            ),
-            child: const Text("Buy Now", style: TextStyle(color: Colors.white)),
-          ),
+              const SizedBox(width: 10),
+              IconButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Constants.PrideAPPCOLOUR,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: Icon(Icons.shopping_cart_checkout,color: Colors.white,),
+              ),
+            ],
+          )
+
         ],
       ),
     );

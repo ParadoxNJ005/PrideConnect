@@ -1,5 +1,6 @@
 // course_page.dart
 import 'package:flutter/material.dart';
+import 'package:prideconnect/utils/contstants.dart';
 
 import '../components/featuredcoursescarausel.dart';
 
@@ -12,6 +13,7 @@ class _CoursePageState extends State<CoursePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Constants.PrideAPPCOLOUR,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

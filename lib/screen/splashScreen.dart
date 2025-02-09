@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:prideconnect/database/Apis.dart';
 import 'package:prideconnect/screen/homescreen.dart';
+import 'package:prideconnect/screen/landingpage.dart';
 import 'package:prideconnect/screen/profilePage.dart';
 import '../utils/contstants.dart';
 import '../components/bottomnav.dart';
@@ -17,10 +18,11 @@ class SplashScreens extends StatefulWidget {
 
 class _SplashScreensState extends State<SplashScreens>{
 
+  @override
   void initState() {
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Constants.APPCOLOUR,
+      statusBarColor: Constants.PrideAPPCOLOUR,
     ));
     // Navigate after 4 seconds
     Future.delayed(Duration(seconds: 4), () {
@@ -36,7 +38,7 @@ class _SplashScreensState extends State<SplashScreens>{
       await APIs.loadCurrentUser();
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>BottomNav()));
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>BottomNav()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>LandingPage()));
     }
   }
 

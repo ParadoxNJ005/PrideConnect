@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:prideconnect/model/chatuser.dart';
 import 'package:prideconnect/screen/profilePage.dart';
+import '../components/Custom_navDrawer.dart';
 import '../components/helpr.dart';
 import '../database/Apis.dart';
 import '../utils/contstants.dart';
@@ -61,90 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  _handleGoogleBtnClick() {
-    Dialogs.showProgressBar(context);
-    debugPrint("Google Sign-In initiated.");
 
-    _signInWithGoogle().then((user) async {
-      Navigator.pop(context);
-      debugPrint("Sign-In process completed.");
-
-      if (user != null) {
-        final email = user.user?.email;
-        debugPrint("User email retrieved: $email");
-
-        if (email != null) {
-          if (await APIs.userExists()) {
-            debugPrint("User exists in the database. Navigating to HomeScreen.");
-            await APIs.fetchAndStoreCurrentUser();
-            // Navigator.pushReplacement(
-            //   context,
-            //   MaterialPageRoute(builder: (_) => const HomeScreen()),
-            // );
-          } else {
-            debugPrint("New user detected. Creating Google user entry.");
-            APIs.createGoogleUser().then((value) async {
-              await APIs.fetchAndStoreCurrentUser();
-              debugPrint("Google user created successfully.");
-              // Uncomment this if you want to navigate to CollegeDetails screen
-              // Navigator.pushReplacement(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => const CollegeDetails()),
-              // );
-            }).catchError((e) {
-              debugPrint("Error creating Google user: $e");
-            });
-          }
-        } else {
-          debugPrint("Invalid college email. Prompting user.");
-          Dialogs.showSnackbar(context, "⚠️ Login Via Valid College Id!!");
-
-          debugPrint("Signing out the user from Firebase and Google.");
-          await FirebaseAuth.instance.signOut();
-          await GoogleSignIn().signOut();
-        }
-        _refreshPage();
-      } else {
-        debugPrint("User is null. Sign-In failed or canceled.");
-      }
-    }).catchError((e) {
-      debugPrint("Error during Google Sign-In process: $e");
-    });
-  }
-
-  Future<UserCredential?> _signInWithGoogle() async {
-    try {
-      debugPrint("Checking internet connectivity.");
-      await InternetAddress.lookup('google.com');
-      debugPrint("Internet connectivity confirmed.");
-
-      debugPrint("Initiating Google Sign-In.");
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      if (googleUser == null) {
-        debugPrint("Google Sign-In canceled by user.");
-        return null;
-      }
-
-      debugPrint("Google user signed in: ${googleUser.email}");
-      final GoogleSignInAuthentication? googleAuth =
-      await googleUser.authentication;
-
-      debugPrint("Google Auth credentials retrieved. Access Token: ${googleAuth?.accessToken}, ID Token: ${googleAuth?.idToken}");
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth?.accessToken,
-        idToken: googleAuth?.idToken,
-      );
-
-      debugPrint("Signing in with Firebase using Google credentials.");
-      return await APIs.auth.signInWithCredential(credential);
-    } catch (e) {
-      debugPrint("Error during _signInWithGoogle: $e");
-      Dialogs.showSnackbar(context, "Something Went Wrong(Check Internet!!)");
-      return null;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,23 +74,37 @@ class _HomeScreenState extends State<HomeScreen> {
           title: Text("Pride Connect" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
           backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
           elevation: 0, // Remove the shadow
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: SvgPicture.asset(
+                "assets/svgIcons/hamburger.svg",
+                color: Constants.WHITE,
+              ),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            ),
           ),
+          // leading:
+          // Padding(
+          //   padding: const EdgeInsets.all(8.0),
+          //   child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+          // ),
           actions: [
-            if(APIs.HaveImage)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: InkWell(
                 onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
-                child: CircleAvatar(
-                  backgroundImage: NetworkImage(APIs.me!.image),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
                 ),
               ),
             ),
           ],
         ),
+        drawer: const CustomNavDrawer(),
+        backgroundColor: Constants.PrideAPPCOLOUR,
         body: SingleChildScrollView(
           controller: _scrollController,
           child: Column(
@@ -193,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     width: double.infinity,
                     height: MediaQuery.of(context).size.height*0.9,
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.grey.withOpacity(0.5),
                   ),
                   Positioned(
                     bottom: 170,
@@ -230,7 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: () {
                                 APIs.fetchCartData();
                               },
-                              child: Text('Explore Opportunities'),
                               style: ElevatedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 backgroundColor: Colors.blue.withOpacity(.8), // Background color for ElevatedButton
@@ -239,23 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(10), // Corner radius
                                 ),
                               ),
-                            ),
-                            SizedBox(height: 10), // Space between buttons
-                            OutlinedButton(
-                              onPressed: () async{
-                                await _handleGoogleBtnClick();
-                                // Navigator.push(context, MaterialPageRoute(builder: (_)=>Events()));
-                              },
-                              child: (!APIs.HaveImage) ? Text('Join with Google' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),) : Text('Welcome to Pride Connect' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.transparent, // Background color for OutlinedButton
-                                side: BorderSide(color: Colors.white),
-                                minimumSize: Size(double.infinity, 50), // Max width and height
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10), // Corner radius
-                                ),
-                              ),
+                              child: Text('Explore Opportunities'),
                             ),
                           ],
                         ),
@@ -268,16 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Welcome Section
               Container(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.grey.withOpacity(0.7),
-                          Colors.grey.withOpacity(0.3),
-                          Colors.grey.withOpacity(0.1),
-                          Colors.white
-                        ],
-                      ),
+                      color: Constants.PrideAPPCOLOUR
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical:25 ,horizontal: 16.0),
@@ -291,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 30,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black, // Text color for visibility on gradient
+                              color: Colors.white, // Text color for visibility on gradient
                             ),
                           ),
                           SizedBox(height: 10),
@@ -300,21 +207,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.black.withOpacity(0.8), // Slightly transparent text
+                              color: Colors.white.withOpacity(0.8), // Slightly transparent text
                             ),
                           ),
                           SizedBox(height: 20),
                           ElevatedButton(
                             onPressed: () {},
-                            child: Text('Explore Opportunities'),
                             style: ElevatedButton.styleFrom(
                               foregroundColor: Colors.white,
-                              backgroundColor: Colors.black.withOpacity(.8), // Background color for ElevatedButton
+                              backgroundColor: Colors.grey.withOpacity(.8), // Background color for ElevatedButton
                               minimumSize: Size(double.infinity, 50), // Max width and height
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10), // Corner radius
                               ),
                             ),
+                            child: Text('Explore Opportunities'),
                           ),
                         ],
                       ),
@@ -329,6 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white
                   ),
                 ),
               ),
@@ -351,6 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white
                   ),
                 ),
               ),
@@ -374,6 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white
                       ),
                     ),
                     SizedBox(height: 30),
@@ -473,6 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white
                   ),
                 ),
               ),
@@ -487,6 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white
                   ),
                 ),
               ),
@@ -510,8 +422,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Text('Find Nearby NGOs' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          backgroundColor: Colors.black, // Background color for OutlinedButton
-                          side: BorderSide(color: Colors.black),
+                          backgroundColor: Colors.transparent, // Background color for OutlinedButton
+                          side: BorderSide(color: Colors.white),
                           minimumSize: Size(double.infinity, 50), // Max width and height
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10), // Corner radius
@@ -620,7 +532,6 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (builder)=>AboutPage()));
               },
-              child: Text('Apply Now' ,style: TextStyle(color: Colors.black , fontWeight: FontWeight.w500 , fontSize: 18),),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.transparent, // Background color for OutlinedButton
@@ -630,6 +541,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(10), // Corner radius
                 ),
               ),
+              child: Text('Apply Now' ,style: TextStyle(color: Constants.PrideAPPCOLOUR , fontWeight: FontWeight.w500 , fontSize: 18),),
             ),
           ],
         ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prideconnect/screen/postScreen.dart';
-
+import 'package:prideconnect/screen/profilePage.dart';
 import '../utils/contstants.dart';
 
 class ExplorePage extends StatefulWidget {
@@ -16,26 +16,34 @@ class _ExplorePageState extends State<ExplorePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Constants.PrideAPPCOLOUR,
-        elevation: 0, // Remove shadow
-        title: const Text(
-          'Explore',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), // Black text for white background
-        ),
-        actions: const [
-          CircleAvatar(
-            backgroundImage: AssetImage('assets/images/d.png'), // Replace with your profile image path
+        title: Text("Explore" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
+        backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
+        elevation: 0, // Remove the shadow
+        leading: IconButton(onPressed: (){Navigator.pop(context);}, icon: Icon(Icons.arrow_back,color: Colors.white,)),
+        // leading:
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+        // ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: InkWell(
+              onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+              ),
+            ),
           ),
-          SizedBox(width: 16),
         ],
-        iconTheme: const IconThemeData(color: Colors.black), // Icons in black
       ),
-      backgroundColor: Colors.white, // Set scaffold background color to white
+      backgroundColor: Constants.PrideAPPCOLOUR, // Set scaffold background color to white
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildPostInput(),
-            Divider(thickness: 1, color: Colors.grey[300]),
+            Divider(thickness: 1, color: Colors.grey[300] ,indent: 35,endIndent: 35,),
             _buildPostCard(
               index: 0,
               profileImage: 'assets/images/d.png',
@@ -69,8 +77,10 @@ class _ExplorePageState extends State<ExplorePage> {
               const CircleAvatar(
                 backgroundImage: AssetImage('assets/images/d.png'), // Replace with your profile image path
               ),
-              const SizedBox(width: 10),
-              Expanded(
+              const SizedBox(width: 15),
+              SizedBox(
+                width: 330, // Adjust width (80% of screen width)
+                height: 50,
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Share your thoughts...',
@@ -92,11 +102,11 @@ class _ExplorePageState extends State<ExplorePage> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.image),
+                    icon: const Icon(Icons.image,color: Colors.white,),
                     onPressed: () {},
                   ),
                   IconButton(
-                    icon: const Icon(Icons.code),
+                    icon: const Icon(Icons.code ,color: Colors.white,),
                     onPressed: () {},
                   ),
                 ],
@@ -105,12 +115,12 @@ class _ExplorePageState extends State<ExplorePage> {
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_)=>SelectMedia()));
                 },
-                child: const Text('Post'),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
+                child: const Text('Post'),
               ),
             ],
           ),
