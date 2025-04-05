@@ -1,4 +1,3 @@
-Here’s your updated README tailored for the *Spectrum* app, with the requested details and formatting:
 
 ---
 
