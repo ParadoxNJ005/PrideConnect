@@ -62,7 +62,6 @@ Download the APK:
 - Chatbot improvements (language support, voice input)
 - Notification system and calendar
 - Mentor-connect for career and emotional guidance
-- iOS version
 
 ---
 
