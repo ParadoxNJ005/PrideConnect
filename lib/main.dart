@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:prideconnect/screen/homescreen.dart';
 import 'package:prideconnect/screen/splashScreen.dart';
-import 'package:prideconnect/utils/contstants.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -78,7 +77,7 @@ class _MyAppState extends State<MyApp> {
         //     secondary: Constants.SKYBLUE,
         //   ),
         // ),
-        title: 'SemBreaker',
+        title: 'Spectrum',
         debugShowCheckedModeBanner: false,
         routes: {
           '/home': (context) => HomeScreen(),

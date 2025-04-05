@@ -95,7 +95,7 @@ class _AllWorkshopPageState extends State<AllWorkshopPage> {
       backgroundColor: Constants.PrideAPPCOLOUR,
       appBar: AppBar(
         title: const Text(
-          "Upcoming Workshops",
+          "Career Hub",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Constants.PrideAPPCOLOUR,

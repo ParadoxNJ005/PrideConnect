@@ -1,28 +1,22 @@
-import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:prideconnect/model/chatuser.dart';
+import 'package:lottie/lottie.dart';
 import 'package:prideconnect/screen/profilePage.dart';
+
 import '../components/Custom_navDrawer.dart';
-import '../components/helpr.dart';
-import '../database/Apis.dart';
-import '../utils/contstants.dart';
-import 'aboutpage.dart';
 import '../components/animatedbutton.dart';
-import 'cartscreen.dart';
-import 'events.dart';
-import 'ngos.dart';
+import '../utils/contstants.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final PageController _pageController = PageController(viewportFraction: 0.9);
+  int _currentPage = 0;
+  Timer? _timer;
   int _selectedIndex = 0;
   late ScrollController _scrollController;
 
@@ -30,12 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    // Trigger refresh on initialization
-    APIs.HaveImage = (APIs.me != null);
-    _refreshPage();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _refreshPage();
-    // });
   }
 
   @override
@@ -44,426 +32,184 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _refreshPage() async {
-    // Fetch the current user or other necessary data
-    await APIs.loadCurrentUser();
+  final List<Map<String, String>> successStories = [
+    {
+      "name": "Sarah Mitchell",
+      "quote": "Finding my authentic self led me to my dream career in tech leadership.",
+      "image": "assets/images/ll.png"
+    },
+    {
+      "name": "Alex Rivera",
+      "quote": "Thanks to this community, I gained the confidence to launch my own startup.",
+      "image": "assets/images/ll.png"
+    },
+    {
+      "name": "Jamie Lee",
+      "quote": "The mentorship program helped me secure my dream job.",
+      "image": "assets/images/ll.png"
+    }
+  ];
 
-    // Simulate additional data fetching
-    await Future.delayed(Duration(seconds: 2));
-
-    // Update the state to reflect changes
-    setState((){
-      APIs.HaveImage = (APIs.me != null);
+  void _startAutoScroll() {
+    _timer = Timer.periodic(Duration(seconds: 4), (timer) {
+      if (_currentPage < successStories.length - 1) {
+        _currentPage++;
+      } else {
+        _currentPage = 0;
+      }
+      _pageController.animateToPage(
+        _currentPage,
+        duration: Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+      );
     });
   }
-
-  void _onBottomNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
 
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: _refreshPage,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text("Pride Connect" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
-          backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
-          elevation: 0, // Remove the shadow
-          leading: Builder(
-            builder: (context) => IconButton(
-              icon: SvgPicture.asset(
-                "assets/svgIcons/hamburger.svg",
-                color: Constants.WHITE,
+    return Scaffold(
+      backgroundColor: Color(0xFF0E1624),
+      appBar: AppBar(
+        title: Text("Spectrum" , style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold),),
+        backgroundColor: Constants.PrideAPPCOLOUR, // Set background color to transparent
+        elevation: 0, // Remove the shadow
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: SvgPicture.asset(
+              "assets/svgIcons/hamburger.svg",
+              color: Constants.WHITE,
+            ),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
+        // leading:
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
+        // ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: InkWell(
+              onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
               ),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
             ),
           ),
-          // leading:
-          // Padding(
-          //   padding: const EdgeInsets.all(8.0),
-          //   child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
-          // ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              child: InkWell(
-                onTap: (){Navigator.push(context, MaterialPageRoute(builder: (_)=>ProfilePage()));},
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Image.asset('assets/images/loading.png', fit: BoxFit.contain ,),
-                ),
-              ),
-            ),
-          ],
-        ),
-        drawer: const CustomNavDrawer(),
-        backgroundColor: Constants.PrideAPPCOLOUR,
-        body: SingleChildScrollView(
-          controller: _scrollController,
+        ],
+      ),
+      drawer: const CustomNavDrawer(),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Hero Section
-              Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: MediaQuery.of(context).size.height*0.9,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/a.png'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: double.infinity,
-                    height: MediaQuery.of(context).size.height*0.9,
-                    color: Colors.grey.withOpacity(0.5),
-                  ),
-                  Positioned(
-                    bottom: 170,
-                    left: 20,
-                    right: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Empowering the\n LGBTQ+ Community,\n One Step at a Time',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 34,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'Upskilling, connecting, and transforming lives with career opportunities, counseling, and support.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        Column(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                APIs.fetchCartData();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.blue.withOpacity(.8), // Background color for ElevatedButton
-                                minimumSize: Size(double.infinity, 50), // Max width and height
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10), // Corner radius
-                                ),
-                              ),
-                              child: Text('Explore Opportunities'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedIconButton(scrollController: _scrollController),
-                ],
-              ),
-              // Welcome Section
-              Container(
-                    decoration: BoxDecoration(
-                      color: Constants.PrideAPPCOLOUR
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical:25 ,horizontal: 16.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Welcome to Inclusive\n Learning',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white, // Text color for visibility on gradient
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Empowering the LGBTQ+ community through education and opportunities.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withOpacity(0.8), // Slightly transparent text
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Colors.grey.withOpacity(.8), // Background color for ElevatedButton
-                              minimumSize: Size(double.infinity, 50), // Max width and height
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10), // Corner radius
-                              ),
-                            ),
-                            child: Text('Explore Opportunities'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
               SizedBox(height: 20),
-              // Featured Courses
+
+              // Greeting Section
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Featured Courses',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text("Hi,", style: TextStyle(fontSize: 20, color: Colors.white)),
               ),
-              SizedBox(height: 10),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildCourseCard('Web Development', 'Learn modern web technologies', 'assets/images/g.png'),
-                    _buildCourseCard('Business Skills', 'Master entrepreneurship', 'assets/images/b.png'),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              // Upcoming Events
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Upcoming Events',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text("Sarah", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
-              SizedBox(height: 10),
-              _buildEventCard('Career Workshop', 'June 15, 2024 · Virtual', 'assets/images/c.png'),
-              SizedBox(height: 20),
-              // Success Stories
-              Container(
-                height: 300,
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(.05), // Background color with some opacity
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-                  crossAxisAlignment: CrossAxisAlignment.center, // Center content horizontally
-                  children: [
-                    SizedBox(height: 20),
-                    Text(
-                      'Success Stories',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white
-                      ),
-                    ),
-                    SizedBox(height: 30),
-                    // Horizontal ScrollView
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          // First Card
-                          Card(
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Container(
-                              width: 330, // Fixed width for each card
-                              child: ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                                leading: CircleAvatar(
-                                  backgroundImage: AssetImage('assets/images/d.png'),
-                                ),
-                                title: Text('Alex Thompson'),
-                                subtitle: Text('Software Engineer at Google'),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 20),
-                          // Second Card
-                          Card(
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Container(
-                              width: 330, // Fixed width for each card
-                              child: ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                                leading: CircleAvatar(
-                                  backgroundImage: AssetImage('assets/images/d.png'),
-                                ),
-                                title: Text('Jamie Lee'),
-                                subtitle: Text('Product Manager at Microsoft'),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 20),
-                          // Third Card
-                          Card(
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Container(
-                              width: 330, // Fixed width for each card
-                              child: ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                                leading: CircleAvatar(
-                                  backgroundImage: AssetImage('assets/images/d.png'),
-                                ),
-                                title: Text('Samira Patel'),
-                                subtitle: Text('UX Designer at Facebook'),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 20),
-                          // Fourth Card
-                          Card(
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Container(
-                              width: 330, // Fixed width for each card
-                              child: ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                                leading: CircleAvatar(
-                                  backgroundImage: AssetImage('assets/images/d.png'),
-                                ),
-                                title: Text('Michael Harris'),
-                                subtitle: Text('Data Scientist at Amazon'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                  ],
-                ),
-              ),
-              SizedBox(height: 20),
-              // Job Opportunities
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Job Opportunities',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              _buildJobCard('Uber She++', 'User India'),
-              SizedBox(height: 20),
-              // Find Support
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Find Support',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white
-                  ),
-                ),
-              ),
+
+              // Lottie Animation
               SizedBox(height: 10),
               Center(
-                child: Container(
-                  height: 300,
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  color: Colors.grey.withOpacity(0.1),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ClipRRect(borderRadius: BorderRadius.circular(10) ,child: Image.asset('assets/images/f.png',width: double.infinity, fit: BoxFit.cover)),
-                      SizedBox(height: 10),
-                      OutlinedButton(
-                        onPressed: () {
-                          Navigator.push(context,MaterialPageRoute(builder: (_)=>CartPage()));
-                        },
-                        child: Text('Find Nearby NGOs' ,style: TextStyle(color: Colors.white , fontWeight: FontWeight.w500 , fontSize: 18),),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.transparent, // Background color for OutlinedButton
-                          side: BorderSide(color: Colors.white),
-                          minimumSize: Size(double.infinity, 50), // Max width and height
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10), // Corner radius
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                child: Lottie.asset('assets/animation/nodatafound.json', height: 350),
               ),
-              SizedBox(height: 20,)
-            ],
-          ),
-        )
 
-      ),
-    );
-  }
+              SizedBox(height: 28),
+              _buildEmpowermentBox(),
+              Center(child: Icon(
+                Icons.keyboard_arrow_down,
+                size: 50,
+                color: Colors.white,
+              ),),
 
-  Widget _buildCourseCard(String title, String subtitle, String imagePath) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16.0),
-      child: Card(
-        child: Container(
-          width: 200,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Image.asset(imagePath, fit: BoxFit.cover, height: 100, width: double.infinity),
+              SizedBox(height: 30),
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-                    SizedBox(height: 5),
-                    Text(subtitle, style: TextStyle(color: Colors.grey[600])),
-                  ],
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "Success Stories",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
+              SizedBox(height: 15),
+
+              // Auto-Scrolling PageView
+              SizedBox(
+                height: 250,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: successStories.length,
+                  itemBuilder: (context, index) {
+                    return _buildSuccessStoryCard(successStories[index]);
+                  },
+                ),
+              ),
+
+              SizedBox(height: 30),
+
+              // Our Mission Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "Our Mission",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 15),
+
+              _buildMissionGrid(),
+
+              SizedBox(height: 30),
+
+              // Our Partners Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "Our Partners",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 15),
+              _buildPartners(),
+
+              SizedBox(height: 30),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "Recent Jobs",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 15),
+              buildJobOpenings(),
+
+              SizedBox(height: 30),
+
+              // Our Partners Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "Get Involved",
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 15),
+              _buildGetInvolved(),
+
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -471,80 +217,294 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEventCard(String title, String date, String imagePath) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // Added vertical padding for spacing
-      child: Card(
-        elevation: 4, // Adds a slight shadow to the card
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10), // Rounded corners for the card
+  // Empowering LGBTQ+ Dreams Box
+  Widget _buildEmpowermentBox() {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white, width: 1),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0), // Internal padding for better spacing
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, // Align content to the left
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0), // Rounded corners for the image
-                child: Image.asset(
-                  imagePath,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(height: 5),
-              Text(
-                date,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildJobCard(String title, String company) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            ListTile(
-                leading: Icon(Icons.work),
-                title: Text(title),
-                subtitle: Text(company),
-             ),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (builder)=>AboutPage()));
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.transparent, // Background color for OutlinedButton
-                side: BorderSide(color: Colors.black),
-                minimumSize: Size(double.infinity, 50), // Max width and height
+            Text("Empowering LGBTQ+ Dreams", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),textAlign: TextAlign.center,),
+            SizedBox(height: 5),
+            Text("Your identity, your career, your pride", style: TextStyle(fontSize: 18, color: Colors.white)),
+            SizedBox(height: 10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10), // Corner radius
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.white),
                 ),
               ),
-              child: Text('Apply Now' ,style: TextStyle(color: Constants.PrideAPPCOLOUR , fontWeight: FontWeight.w500 , fontSize: 18),),
+              onPressed: () {},
+              child: Text("Explore", style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+
+  Widget _buildSuccessStoryCard(Map<String, String> story) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Color(0xFF1E2A3A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            child: Image.asset(
+              story["image"]!,
+              height: 140,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  story["name"]!,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  '"${story["quote"]!}"',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Our Mission Section
+  Widget _buildMissionGrid() {
+    final List<Map<String, IconData>> missions = [
+      {"Career Growth": Icons.work},
+      {"Community": Icons.groups},
+      {"Safe Space": Icons.security},
+      {"Support": Icons.favorite},
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: missions.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio:1.5, crossAxisSpacing: 10, mainAxisSpacing: 10),
+      itemBuilder: (context, index) {
+        return Container(
+          decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white)),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(missions[index].values.first, color: Colors.white,size: 45,),
+                SizedBox(height: 10),
+                Text(missions[index].keys.first, style: TextStyle(color: Colors.white,fontSize: 18)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildJobOpenings() {
+    // Sample job opening data with image URLs
+    final List<Map<String, dynamic>> jobOpenings = [
+      {
+        'imageUrl': 'https://tse1.mm.bing.net/th?id=OIP.C19WrK-kUeJMhOzi6EjHtQHaHa&pid=Api&P=0&h=180',
+        'companyName': 'Google',
+        'subtitle': 'Female , Ews , LGBTQ'
+      },
+      {
+        'imageUrl': 'https://logospng.org/download/uber/logo-uber-preta-4096.png',
+        'companyName': 'Uber She++',
+        'subtitle': 'Reservation for lgbtq+'
+      },
+    ];
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: jobOpenings.length,
+      itemBuilder: (context, index) {
+        return Container(
+          margin: EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white, width: 1.5),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Company Image from URL
+                    Container(
+                      height: 80,
+                      width: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: Image.network(
+                        jobOpenings[index]['imageUrl'],
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.broken_image, size: 80, color: Colors.white);
+                        },
+                      ),
+                    ),
+                    SizedBox(width: 15),
+                    // Company Name and Subtitle
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            jobOpenings[index]['companyName'],
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            jobOpenings[index]['subtitle'],
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 15),
+                // Apply Now Button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      // Add your apply logic here
+                      print('Applied to ${jobOpenings[index]['companyName']}');
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                    child: Text(
+                      'Apply Now',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Our Partners Section
+  Widget _buildPartners() {
+    final List<Map<String, String>> missions = [
+      {'assets/images/p1.png': 'assets/images/c.png'},
+      {'assets/images/p2.png': 'assets/images/c.png'},
+      {'assets/images/p3.png': 'assets/images/c.png'},
+      {'assets/images/p4.png': 'assets/images/c.png'},
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: missions.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio:1.5, crossAxisSpacing: 10, mainAxisSpacing: 10),
+      itemBuilder: (context, index) {
+        return Container(
+          decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white)),
+          child: Center(
+            child: Column(
+              children: [
+                Container(
+                  height: 110,
+                  width: 110,
+                  child: Image.asset(missions[index].keys.first),
+                ),
+                SizedBox(height: 10),
+                // Text(missions[index].keys.first, style: TextStyle(color: Colors.white,fontSize: 18)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGetInvolved() {
+    final List<Map<String, IconData>> involvementOptions = [
+      {"Join Our Network": Icons.connect_without_contact},
+      {"Mentorship Program": Icons.school},
+      {"Resource Hub": Icons.lightbulb},
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.transparent, // Adjust background color as needed
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white, width: 1),
+      ),
+      child: Column(
+        children: involvementOptions.map((option) {
+          return ListTile(
+            leading: Icon(option.values.first, color: Colors.white , size: 40,),
+            title: Text(option.keys.first, style: TextStyle(color: Colors.white , fontSize: 18)),
+            subtitle: Text("Learn and connect", style: TextStyle(color: Colors.grey)),
+          );
+        }).toList(),
       ),
     );
   }

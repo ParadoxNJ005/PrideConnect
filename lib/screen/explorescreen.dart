@@ -44,23 +44,23 @@ class _ExplorePageState extends State<ExplorePage> {
           children: [
             _buildPostInput(),
             Divider(thickness: 1, color: Colors.grey[300] ,indent: 35,endIndent: 35,),
-            _buildPostCard(
-              index: 0,
-              profileImage: 'assets/images/d.png',
-              name: 'Sarah Chen',
-              role: 'Senior Software Engineer at Microsoft',
-              content:
-              'Just solved an interesting problem optimizing our database queries. Here\'s a quick tip: Always remember to index your frequently queried columns! 🚀',
-              codeImage: 'assets/images/c.png',
-            ),
-            _buildPostCard(
-              index: 1,
-              profileImage: 'assets/images/d.png',
-              name: 'Alex Thompson',
-              role: 'Frontend Developer at Google',
-              content:
-              'Excited to share that I\'m speaking at ReactConf 2024! My talk will cover advanced patterns for state management in large-scale applications. Who else is attending? 🎤',
-            ),
+      _buildPostCard(
+      index: 0,
+      profileImage: 'assets/images/d.png',
+      name: 'Jamie Rivera',
+      role: 'LGBTQ+ Rights Advocate & Tech Mentor',
+      content:
+      'Just launched a new mentorship program connecting LGBTQ+ individuals with industry leaders. If youre looking for career guidance, sign up today! 🌈✨',
+      codeImage: 'assets/images/c.png',
+      ),
+      _buildPostCard(
+        index: 1,
+        profileImage: 'assets/images/d.png',
+        name: 'Taylor Brooks',
+        role: 'Community Manager at PrideTech',
+        content:
+        'Excited to announce an upcoming workshop on AI-driven career development for LGBTQ+ professionals! Join us to explore opportunities and grow together. 🚀🌍',
+      ),
           ],
         ),
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prideconnect/screen/cartscreen.dart';
+import 'package:prideconnect/screen/chatbot.dart';
 import 'package:prideconnect/screen/events.dart';
-
 import '../utils/contstants.dart';
 import '../screen/allworkshop.dart';
 import '../screen/courses.dart';
@@ -20,6 +20,7 @@ class _BottomNavState extends State<BottomNav> {
   final List<Widget> _pages = [
     HomeScreen(), // Home screen as the default page
     Events(),
+    ChatBot(),
     AllWorkshopPage(),
     ExplorePage(),
   ];
@@ -49,15 +50,19 @@ class _BottomNavState extends State<BottomNav> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book),
-            label: 'Courses',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event),
             label: 'Events',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.cell_tower),
+            label: 'Lumi',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event),
+            label: 'Career Hub',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profile',
+            label: 'Explore',
           ),
         ],
       ),
